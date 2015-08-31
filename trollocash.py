@@ -2,9 +2,13 @@
 
 import cherrypy
 import sqlite3
+import os.path
 from hashlib import sha512
 
-DATABASE = "trollocash_development.db"
+DATABASE_DIR = "database"
+DATABASE_FILE = "trollocash_development.db"
+DATABASE = os.path.join(os.path.dirname(__file__), DATABASE_DIR, DATABASE_FILE)
+
 
 class Trollocash(object):
 

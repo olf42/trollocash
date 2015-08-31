@@ -9,6 +9,46 @@ DATABASE_DIR = "database"
 DATABASE_FILE = "trollocash_development.db"
 DATABASE = os.path.join(os.path.dirname(__file__), DATABASE_DIR, DATABASE_FILE)
 
+class Backend(object):
+
+    def __init__(self):
+        pass
+    
+    def create_db(self):
+        with sqlite3.connect(DATABASE) as c:
+            c.execute(''' CREATE TABLE 
+                          IF NOT EXISTS 
+                          items(id INTEGER PRIMARY KEY,
+                                name TEXT,
+                                description TEXT,
+                                price REAL,
+                                su_item INTEGER) ''')
+            c.execute(''' CREATE TABLE 
+                          IF NOT EXISTS 
+                          bookings(id INTEGER PRIMARY KEY,
+                                datetime TEXT,
+                                item_id INTEGER,
+                                details TEXT, 
+                                amount INTEGER,
+                                value REAL,
+                                FOREIGN KEY(item_id) REFERENCES items(id)
+                                ) ''')
+            self.add_item("Cash Operation", "Fill/Withdraw cash from the cash register",  0, 1)
+
+    def add_item(self, name, description, price=0, su_item=0):
+        with sqlite3.connect(DATABASE) as c:
+            c.execute(''' INSERT INTO 
+                          items(name,
+                                description,
+                                price,
+                                su_item) 
+                          VALUES (?, ?, ?, ?) ''',
+                          (name,
+                           description,
+                           price,
+                           su_item))
+
+
 
 class Trollocash(object):
 
@@ -23,6 +63,9 @@ class Trollocash(object):
 class Users(object):
 
     def __init__(self):
+        pass
+
+    def create_db(self):
         with sqlite3.connect(DATABASE) as c:
             c.execute(''' CREATE TABLE 
                           IF NOT EXISTS 
@@ -42,13 +85,11 @@ class Users(object):
                            encrypt_pw(password),
                            superuser))
 
-
     def get_users(self):
         with sqlite3.connect(DATABASE) as c:
             self.users = c.execute(''' SELECT username,password
                           FROM users''')
         return dict(self.users.fetchall())
-
 
     def get_superusers(self):
         with sqlite3.connect(DATABASE) as c:
@@ -61,10 +102,16 @@ def encrypt_pw(pw):
 
 
 if __name__ == '__main__':
+
     users = Users()
-    users.add_user("Alice", "Password", 1)
-    users.add_user("Bob", "Whatever", 0)
-    users.add_user("Karen", "Gisela", 0)
+    backend = Backend()
+
+    if not os.path.isfile(DATABASE):
+        users.create_db()
+        backend.create_db()
+        users.add_user("Alice", "Password", 1)
+        users.add_user("Bob", "Whatever", 0)
+        users.add_user("Karen", "Gisela", 0)
 
     userdata = users.get_users()
     superuserdata = users.get_superusers()

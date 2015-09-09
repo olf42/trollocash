@@ -129,7 +129,8 @@ if __name__ == '__main__':
         backend.add_item("Schokoriegel",
                          "Ein Schokoriegel ist zwar nicht gesund, aber süß.",
                          "1.00")
-        
+
+    current_dir = os.path.dirname(os.path.realpath(__file__))
 
 
 
@@ -146,11 +147,15 @@ if __name__ == '__main__':
 
     cherrypy.tree.mount(Trollocash(), "/", {
             '/': {'tools.basic_auth.on': True,
+                        'tools.staticdir.on': True,
+                        'tools.staticdir.dir': os.path.join(current_dir, 'public'),
                         'tools.sessions.on': True,
                         'tools.basic_auth.realm': 'Trollocash Login',
                         'tools.basic_auth.users': userdata,
                         'tools.basic_auth.encrypt': encrypt_pw},
             '/admin': {'tools.basic_auth.on': True,
+                        'tools.staticdir.on': True,
+                        'tools.staticdir.dir': os.path.join(current_dir, 'public'),
                         'tools.sessions.on': True,
                         'tools.basic_auth.realm': 'Trollocash Admin Login',
                         'tools.basic_auth.users': superuserdata,

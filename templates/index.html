@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}
+Index
+{% endblock %}
+
+
+{% block content %}
+	<hr>
+
+		<div class="row">
+			<div class="col-md-2"></div>
+			<form class="form-horizontal" method="POST" action="/">
+				<div class="col-md-6">
+					<input class="form-control" id="barcode" placeholder="Artikel scannen" type="text" autofocus>
+				</div>
+				<div class="col-md-2">
+					<input type="submit" value="Buchen" class="btn btn-primary" >
+				</div>
+			</form>
+			<div class="col-md-2"></div>
+		</div>
+	<hr>
+
+	{% for item in items %}
+
+		<div class="row">
+			<div class="col-md-2"></div>
+			<div class="col-md-2">
+				<h2>{{ item.name }}</h2>
+			</div>
+			<div class="col-md-8"></div>
+		</div>
+		<div class="row">
+			<div class="col-md-2"></div>
+			<div class="col-md-4">
+				<p>{{ item.description }}</p>
+			</div>
+			<form class="form-horizontal" method="POST" action="/">
+				<input type="hidden" name="id" value="{{ item.id }}">
+			<div class="col-md-2">
+				{% if item.price == 0 %}	
+				<input class="form-control" id="customprice" placeholder="Preis" type="text">
+				{% endif %}
+			</div>
+			<div class="col-md-2">
+				<input type="submit" value="Buchen" class="btn btn-primary" >
+			</div>
+			</form>
+			<div class="col-md-2"></div>
+		</div><!-- /.row -->
+
+	{% endfor %}
+
+{% endblock %}
+

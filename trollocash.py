@@ -4,6 +4,7 @@ import cherrypy
 import sqlite3
 import os.path
 from hashlib import sha512
+from jinja2 import Environment, PackageLoader
 
 DATABASE_DIR = "database"
 DATABASE_FILE = "trollocash_development.db"
@@ -34,28 +35,49 @@ class Backend(object):
                                 value REAL,
                                 FOREIGN KEY(item_id) REFERENCES items(id)
                                 ) ''')
-            self.add_item("Cash Operation", "Fill/Withdraw cash from the cash register",  0, 1)
+            self.add_item(name="Cash Operation",
+                          description="Fill/Withdraw cash from the cash register",
+                          price=0.0,
+                          visible=0,
+                          su_item=1)
 
-    def add_item(self, name, description, price=0, su_item=0):
+    def add_item(self, name, description, visible, price=0, su_item=0):
         with sqlite3.connect(DATABASE) as c:
             c.execute(''' INSERT INTO 
                           items(name,
                                 description,
                                 price,
+                                visible,
                                 su_item) 
-                          VALUES (?, ?, ?, ?) ''',
+                          VALUES (?, ?, ?, ?, ?) ''',
                           (name,
                            description,
                            price,
+                           visible,
                            su_item))
 
+
+    def get_visible_items(self):
+        result = []
+        keys = ["id", "name", "description", "price"]
+        with sqlite3.connect(DATABASE) as c:
+            response = c.execute(''' SELECT id,name,description,price
+                          FROM items
+                          WHERE visible = 1 AND
+                          su_item = 0''')
+        for item in response.fetchall():
+            result.append(dict(zip(keys,list(item))))
+        return result
 
 
 class Trollocash(object):
 
     @cherrypy.expose
     def index(self):
-        return "Welcome to Trollocash"
+        backend = Backend()
+        items = backend.get_visible_items()
+        template = env.get_template('index.html')
+        return template.render(items=items)
 
     @cherrypy.expose
     def admin(self):
@@ -105,6 +127,8 @@ def encrypt_pw(pw):
 
 if __name__ == '__main__':
 
+    env = Environment(loader=PackageLoader('trollocash', 'templates'))
+
     users = Users()
     backend = Backend()
 
@@ -121,18 +145,19 @@ if __name__ == '__main__':
         users.add_user("Karen",
                        "Gisela",
                        0)
-        backend.add_item("Spende",
-                         "Eine Geldspende beliebiger Höhe")
-        backend.add_item("Parkticket",
-                         "Parkticket fürs Campgelände",
-                         "8.00")
-        backend.add_item("Schokoriegel",
-                         "Ein Schokoriegel ist zwar nicht gesund, aber süß.",
-                         "1.00")
+        backend.add_item(name="Spende",
+                         description="Eine Geldspende beliebiger Höhe",
+                         visible=1)
+        backend.add_item(name="Parkticket",
+                         description="Parkticket fürs Campgelände",
+                         visible=1,
+                         price="8.00")
+        backend.add_item(name="Schokoriegel",
+                         description="Ein Schokoriegel ist zwar nicht gesund, aber süß.",
+                         visible=1,
+                         price="1.00")
 
     current_dir = os.path.dirname(os.path.realpath(__file__))
-
-
 
     userdata = users.get_users()
     superuserdata = users.get_superusers()

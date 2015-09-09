@@ -13,7 +13,7 @@ class Backend(object):
 
     def __init__(self):
         pass
-    
+
     def create_db(self):
         with sqlite3.connect(DATABASE) as c:
             c.execute(''' CREATE TABLE 
@@ -22,6 +22,7 @@ class Backend(object):
                                 name TEXT,
                                 description TEXT,
                                 price REAL,
+                                visible INTEGER,
                                 su_item INTEGER) ''')
             c.execute(''' CREATE TABLE 
                           IF NOT EXISTS 
@@ -58,6 +59,7 @@ class Trollocash(object):
 
     @cherrypy.expose
     def admin(self):
+
         return "Welcome to Trollocash Admin Interface"
 
 class Users(object):
@@ -106,12 +108,30 @@ if __name__ == '__main__':
     users = Users()
     backend = Backend()
 
+    # Test Data
     if not os.path.isfile(DATABASE):
         users.create_db()
         backend.create_db()
-        users.add_user("Alice", "Password", 1)
-        users.add_user("Bob", "Whatever", 0)
-        users.add_user("Karen", "Gisela", 0)
+        users.add_user("Alice",
+                       "Password",
+                       1)
+        users.add_user("Bob",
+                       "Whatever",
+                       0)
+        users.add_user("Karen",
+                       "Gisela",
+                       0)
+        backend.add_item("Spende",
+                         "Eine Geldspende beliebiger Höhe")
+        backend.add_item("Parkticket",
+                         "Parkticket fürs Campgelände",
+                         "8.00")
+        backend.add_item("Schokoriegel",
+                         "Ein Schokoriegel ist zwar nicht gesund, aber süß.",
+                         "1.00")
+        
+
+
 
     userdata = users.get_users()
     superuserdata = users.get_superusers()
@@ -124,9 +144,7 @@ if __name__ == '__main__':
         'log.screen': True
     })
 
-    trollocash = Trollocash()
-
-    cherrypy.tree.mount(trollocash, "/", {
+    cherrypy.tree.mount(Trollocash(), "/", {
             '/': {'tools.basic_auth.on': True,
                         'tools.sessions.on': True,
                         'tools.basic_auth.realm': 'Trollocash Login',

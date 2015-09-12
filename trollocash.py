@@ -11,6 +11,12 @@ DATABASE_DIR = "database"
 DATABASE_FILE = "trollocash_development.db"
 DATABASE = os.path.join(os.path.dirname(__file__), DATABASE_DIR, DATABASE_FILE)
 TICKET_PREFIX = "PC16"
+LOG_TYPE = {0:"info",
+            1:"warning",
+            2:"error"}
+LOG_DISPLAY = {0:"success",
+               1:"warning",
+               2:"danger"}
 
 class Backend(object):
 
@@ -41,7 +47,8 @@ class Backend(object):
                           IF NOT EXISTS 
                           log(id INTEGER PRIMARY KEY,
                                 datetime TEXT,
-                                message TEXT
+                                message TEXT,
+                                type INTEGER
                                 ) ''')
             self.write_log("Tables created")
             self.add_item(name="Cash Operation",
@@ -51,23 +58,26 @@ class Backend(object):
                           su_item=1)
 
 
-    def write_log(self, message):
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    def write_log(self, message, logtype=0):
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S:%f")
         with sqlite3.connect(DATABASE) as c:
             c.execute(''' INSERT INTO 
                           log(datetime,
-                              message)
-                          VALUES (?, ?) ''',
+                              message,
+                              type)
+                          VALUES (?, ?, ?) ''',
                           (now,
-                           message))
+                           message,
+                           logtype))
 
 
     def get_log(self):
         result = []
-        keys = ["datetime", "message"]
+        keys = ["datetime", "message", "type"]
         with sqlite3.connect(DATABASE) as c:
-            response = c.execute(''' SELECT datetime, message
-                          FROM log''')
+            response = c.execute(''' SELECT datetime, message, type
+                          FROM log
+                          ORDER BY datetime DESC''')
         for item in response.fetchall():
             itemdict =dict(zip(keys,list(item)))
             result.append(itemdict)
@@ -183,6 +193,9 @@ class Trollocash(object):
 
 class Trolloadmin(object):
 
+    def __init__(self):
+        self.backend_ = Backend()
+
     @cherrypy.expose
     def index(self):
 
@@ -190,9 +203,11 @@ class Trolloadmin(object):
 
     @cherrypy.expose
     def log(self):
-        backend = Backend()
-        logs = backend.get_log()
-        return str(logs)
+        template = env.get_template('log.html')
+        logs = self.backend_.get_log()
+        for message in logs:
+            message['type'] = LOG_DISPLAY[message['type']]
+        return template.render(logs=logs)
 
 class Users(object):
 
